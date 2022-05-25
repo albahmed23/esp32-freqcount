@@ -44,12 +44,12 @@
 
 // In ESP-IDF v4.1-beta1 (and presumably newer), the macro RMT_MEM_BLOCK_BYTE_NUM has been removed
 #if (ESP_IDF_VERSION_MAJOR == 4)
-# define RMT_MEM_BLOCK_BYTE_NUM ((RMT_CHANNEL_MEM_WORDS) * 4)
+# define RMT_MEM_BLOCK_BYTE_NUM ((SOC_RMT_MEM_WORDS_PER_CHANNEL) * 4)
 #endif
 
 static void init_rmt(uint8_t tx_gpio, rmt_channel_t channel, uint8_t clk_div)
 {
-    ESP_LOGD(TAG, "%s", __FUNCTION__);
+    ESP_LOGI(TAG, "init_rmt");
 
     rmt_config_t rmt_tx = {
         .rmt_mode = RMT_MODE_TX,
@@ -68,13 +68,13 @@ static void init_rmt(uint8_t tx_gpio, rmt_channel_t channel, uint8_t clk_div)
 
 static int create_rmt_window(rmt_item32_t * items, double sampling_window_seconds, double rmt_period)
 {
-    ESP_LOGD(TAG, "%s", __FUNCTION__);
+    ESP_LOGI(TAG, "create_rmt_window");
 
     int num_items = 0;
 
     // enable counter for exactly x seconds:
     int32_t total_duration = (uint32_t)(sampling_window_seconds / rmt_period);
-    ESP_LOGD(TAG, "total_duration %f seconds = %d * %g seconds", sampling_window_seconds, total_duration, rmt_period);
+    ESP_LOGI(TAG, "total_duration %f seconds = %d * %g seconds", sampling_window_seconds, total_duration, rmt_period);
 
     // max duration per item is 2^15-1 = 32767
     while (total_duration > 0)
@@ -83,7 +83,7 @@ static int create_rmt_window(rmt_item32_t * items, double sampling_window_second
         items[num_items].level0 = 1;
         items[num_items].duration0 = duration;
         total_duration -= duration;
-        ESP_LOGD(TAG, "duration %d", duration);
+        // ESP_LOGI(TAG, "duration %d", duration);
 
         if (total_duration > 0)
         {
@@ -97,20 +97,20 @@ static int create_rmt_window(rmt_item32_t * items, double sampling_window_second
             items[num_items].level1 = 0;
             items[num_items].duration1 = 0;
         }
-        ESP_LOGD(TAG, "[%d].level0 %d", num_items, items[num_items].level0);
-        ESP_LOGD(TAG, "[%d].duration0 %d", num_items, items[num_items].duration0);
-        ESP_LOGD(TAG, "[%d].level1 %d", num_items, items[num_items].level1);
-        ESP_LOGD(TAG, "[%d].duration1 %d", num_items, items[num_items].duration1);
+        // ESP_LOGI(TAG, "[%d].level0 %d", num_items, items[num_items].level0);
+        // ESP_LOGI(TAG, "[%d].duration0 %d", num_items, items[num_items].duration0);
+        // ESP_LOGI(TAG, "[%d].level1 %d", num_items, items[num_items].level1);
+        // ESP_LOGI(TAG, "[%d].duration1 %d", num_items, items[num_items].duration1);
 
         ++num_items;
     }
-    ESP_LOGD(TAG, "num_items %d", num_items);
+    ESP_LOGI(TAG, "num_items %d", num_items);
     return num_items;
 }
 
 static void init_pcnt(uint8_t pulse_gpio, uint8_t ctrl_gpio, pcnt_unit_t unit, pcnt_channel_t channel, uint16_t filter_length)
 {
-    ESP_LOGD(TAG, "%s", __FUNCTION__);
+    //ESP_LOGI(TAG, "%s", __FUNCTION__);
 
     // set up counter
     pcnt_config_t pcnt_config = {
@@ -182,7 +182,8 @@ void frequency_count_task_function(void * pvParameter)
 
         // call wndow-start callback if set
         if (task_inputs->window_start_callback)
-        {
+        {   
+            ESP_LOGI(TAG, "Calling window start callback");
             (task_inputs->window_start_callback)();
         }
 
@@ -199,11 +200,12 @@ void frequency_count_task_function(void * pvParameter)
 
         // call the frequency update callback
         if (task_inputs->frequency_update_callback)
-        {
+        {   
+            // ESP_LOGI(TAG, "Calling frequency update callback");
             (task_inputs->frequency_update_callback)(frequency_hz);
         }
 
-        ESP_LOGD(TAG, "counter %d, frequency %f Hz", count, frequency_hz);
+        // ESP_LOGI(TAG, "counter %d, frequency %f Hz", count, frequency_hz);
 
         int delay_time = task_inputs->sampling_period_seconds * 1000 / portTICK_PERIOD_MS;
         if (delay_time > 0)
